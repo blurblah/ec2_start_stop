@@ -1,5 +1,5 @@
 import boto3
-import pprint
+import sys
 
 
 def input_number(msg, min, max):
@@ -57,22 +57,28 @@ selected_instance = instances[selected_num-1]
 print("You've selected a instance number %d named %s and id %s" %
       (selected_num, selected_instance['name'], selected_instance['id']))
 
+current_state = selected_instance['state']
+if current_state != 'running' and current_state != 'stopped':
+    print('The state of selected instance is neither "running" nor "stopped". Please retry few minutes after.')
+    sys.exit()
+
+to_be = 'start' if current_state == 'stopped' else 'stop'
+
 while True:
     selected_control = input(('The state of this instance is "%s". ' % selected_instance['state']) +
-                             'Which do you want to start or stop? (start/stop) ').lower()
-    if selected_control != 'start' and selected_control != 'stop':
-        print('Invalid input! Please re-type "start" or "stop"')
+                             'Do you want to %s? (y/n) ' % to_be).lower()
+    if selected_control != 'y' and selected_control != 'n':
+        print('Invalid input! Please re-type "y" or "n"')
         continue
     else:
         break
 
-if selected_control == 'start':
-    if selected_instance['state'] == 'stopped':
+if selected_control == 'y':
+    if to_be == 'start':
         print('Starting...')
+        ec2.start_instances(InstanceIds=[selected_instance['id']])
     else:
-        print('The state is not "stopped", so can\'t do that. Bye!')
-else:
-    if selected_instance['state'] == 'running':
         print('Stopping...')
-    else:
-        print('The state is not "running", so can\'t do that. Bye!')
+        ec2.stop_instances(InstanceIds=[selected_instance['id']])
+else:
+    print('Bye!')
